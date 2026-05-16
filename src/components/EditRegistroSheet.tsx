@@ -38,14 +38,15 @@ export default function EditRegistroSheet({ registro, onClose, onSaved }: Props)
   // Animate in on mount
   useEffect(() => {
     if (registro) {
-      setPeso(registro.peso.toString())
-      setEntreno(registro.entreno)
-      setCardio(registro.cardio)
-      setTags(registro.tags ?? [])
-      setConfirmDelete(false)
-      setError(null)
-      // Trigger animation after micro-delay
-      requestAnimationFrame(() => setVisible(true))
+      queueMicrotask(() => {
+        setPeso(registro.peso.toString())
+        setEntreno(registro.entreno)
+        setCardio(registro.cardio)
+        setTags(registro.tags ?? [])
+        setConfirmDelete(false)
+        setError(null)
+        requestAnimationFrame(() => setVisible(true))
+      })
     }
   }, [registro])
 

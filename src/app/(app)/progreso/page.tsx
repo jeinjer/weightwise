@@ -22,12 +22,10 @@ export default function ProgresoPage() {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null)
   const [loading, setLoading]             = useState(true)
   const [editTarget, setEditTarget]       = useState<Registro | null>(null)
-  const [fecha, setFecha]                 = useState<string>('')
+  const [fecha]                           = useState(() =>
+    new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+  )
   const [filtroActivo, setFiltroActivo]   = useState<string>('Todos')
-
-  useEffect(() => {
-    setFecha(new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }))
-  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -62,7 +60,11 @@ export default function ProgresoPage() {
     setLoading(false)
   }, [supabase, filtroActivo])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchData()
+    })
+  }, [fetchData])
 
   async function handleLogout() {
     await supabase.auth.signOut()

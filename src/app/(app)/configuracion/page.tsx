@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import {
   Flag, SlidersHorizontal, LogOut, Loader2, CheckCircle2,
-  User, Scale, Target, Ruler, Trash2, ChevronRight,
+  User, Scale, Trash2, ChevronRight,
 } from 'lucide-react'
 
 interface Configuracion {
@@ -110,7 +110,11 @@ export default function ConfiguracionPage() {
     setLoading(false)
   }, [supabase])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchData()
+    })
+  }, [fetchData])
 
   async function handleSave() {
     setSaving(true)

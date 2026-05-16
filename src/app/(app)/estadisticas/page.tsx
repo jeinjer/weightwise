@@ -108,7 +108,11 @@ export default function EstadisticasPage() {
     setLoading(false)
   }, [supabase])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchData()
+    })
+  }, [fetchData])
 
   // ── Filtrar por rango ───────────────────────────────────
   const filtered = (() => {
