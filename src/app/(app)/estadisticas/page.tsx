@@ -137,6 +137,27 @@ export default function EstadisticasPage() {
   const variacion = primero != null && ultimo != null ? ultimo - primero : null
   const tendencia = variacion == null ? null : variacion < 0 ? 'baja' : variacion > 0 ? 'sube' : 'estable'
 
+  let progresoMensaje = null
+  let progresoColor: string | undefined = undefined
+  if (variacion != null && configuracion?.peso_objetivo != null) {
+    const pInicial = configuracion.peso_inicial ?? primero ?? ultimo ?? 0
+    const quiereBajar = configuracion.peso_objetivo < pInicial
+    const quiereSubir = configuracion.peso_objetivo > pInicial
+    
+    if (quiereBajar) {
+      if (variacion <= -0.1) { progresoMensaje = '¡Venís re bien! Te acercás a tu objetivo. 👏'; progresoColor = 'var(--secondary)' }
+      else if (variacion >= 0.1) { progresoMensaje = 'Subiste un poco. ¡A no aflojar! 💪'; progresoColor = 'var(--tertiary)' }
+      else { progresoMensaje = 'Te estás manteniendo. ¡Seguí así! 👍'; progresoColor = 'var(--on-surface)' }
+    } else if (quiereSubir) {
+      if (variacion >= 0.1) { progresoMensaje = '¡Venís re bien! Ganando peso. 👏'; progresoColor = 'var(--secondary)' }
+      else if (variacion <= -0.1) { progresoMensaje = 'Bajaste un poco. ¡A comer más! 💪'; progresoColor = 'var(--tertiary)' }
+      else { progresoMensaje = 'Te estás manteniendo. ¡A meterle! 👍'; progresoColor = 'var(--on-surface)' }
+    } else {
+      progresoMensaje = 'Mantenimiento de peso. ¡Excelente! 🎯'
+      progresoColor = 'var(--secondary)'
+    }
+  }
+
   const diasConEntreno = filtered.filter(r => r.entreno).length
   const diasConCardio  = filtered.filter(r => r.cardio).length
   const totalDias      = filtered.length
@@ -271,7 +292,12 @@ export default function EstadisticasPage() {
                     : `Subiste ${variacion.toFixed(1)} kg en este período`
                   }
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--on-surface-variant)' }}>
+                {progresoMensaje && (
+                  <p className="text-[13px] font-bold mt-1" style={{ color: progresoColor }}>
+                    {progresoMensaje}
+                  </p>
+                )}
+                <p className="text-xs mt-1" style={{ color: 'var(--on-surface-variant)' }}>
                   {totalDias} registros analizados
                 </p>
               </div>

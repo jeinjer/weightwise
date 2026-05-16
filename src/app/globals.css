@@ -50,6 +50,10 @@ html {
 
 body { min-height: 100dvh; overflow-x: hidden; }
 
+button, a, [role="button"], select, label {
+  cursor: pointer !important;
+}
+
 /* ══════════════════════════════════════════════════
    SCROLLBAR
 ══════════════════════════════════════════════════ */

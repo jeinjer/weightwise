@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { TrendingUp, BarChart2, Settings } from 'lucide-react'
+import { Activity, BarChart2, Settings } from 'lucide-react'
 
 const tabs = [
-  { href: '/progreso',      label: 'Progreso',     icon: TrendingUp },
+  { href: '/progreso',      label: 'Progreso',     icon: Activity },
   { href: '/estadisticas',  label: 'Estadísticas', icon: BarChart2 },
   { href: '/configuracion', label: 'Config',        icon: Settings },
 ]
