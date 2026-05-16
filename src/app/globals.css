@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════
+   DESIGN SYSTEM TOKENS  (Kinetic Performance / dark)
+══════════════════════════════════════════════════ */
+:root {
+  --surface:                  #131313;
+  --surface-dim:              #131313;
+  --surface-bright:           #393939;
+  --surface-container-lowest: #0e0e0e;
+  --surface-container-low:    #1c1b1b;
+  --surface-container:        #201f1f;
+  --surface-container-high:   #2a2a2a;
+  --surface-container-highest:#353534;
+
+  --on-surface:               #e5e2e1;
+  --on-surface-variant:       #c7c4d7;
+  --on-background:            #e5e2e1;
+  --background:               #131313;
+
+  --primary:                  #c0c1ff;
+  --on-primary:               #1000a9;
+  --primary-container:        #8083ff;
+
+  --secondary:                #4edea3;
+  --on-secondary:             #003824;
+  --secondary-container:      #00a572;
+
+  --tertiary:                 #ffb2b7;
+  --on-tertiary:              #67001b;
+  --tertiary-container:       #ff516a;
+
+  --outline:                  #908fa0;
+  --outline-variant:          #464554;
+  --error:                    #ffb4ab;
+}
+
+/* ══════════════════════════════════════════════════
+   BASE
+══════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--background);
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+body { min-height: 100dvh; overflow-x: hidden; }
+
+/* ══════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface-container-low); }
+::-webkit-scrollbar-thumb { background: var(--outline-variant); border-radius: 9999px; }
+
+/* ══════════════════════════════════════════════════
+   PAGE TRANSITIONS
+══════════════════════════════════════════════════ */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-enter {
+  animation: page-enter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ══════════════════════════════════════════════════
+   CARD ENTRANCE (staggered)
+══════════════════════════════════════════════════ */
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+.card-enter {
+  animation: card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ══════════════════════════════════════════════════
+   FADE IN
+══════════════════════════════════════════════════ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease both;
+}
+
+/* ══════════════════════════════════════════════════
+   SLIDE UP (bottom sheet, banners)
+══════════════════════════════════════════════════ */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ══════════════════════════════════════════════════
+   SCALE POP (success states, badges)
+══════════════════════════════════════════════════ */
+@keyframes scale-pop {
+  0%   { transform: scale(0.85); opacity: 0; }
+  60%  { transform: scale(1.05); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.scale-pop {
+  animation: scale-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ══════════════════════════════════════════════════
+   SPINNER
+══════════════════════════════════════════════════ */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ══════════════════════════════════════════════════
+   PULSE GLOW (primary elements)
+══════════════════════════════════════════════════ */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(192,193,255,0); }
+  50%       { box-shadow: 0 0 12px 4px rgba(192,193,255,0.18); }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════════════
+   BOTTOM NAV TAB INDICATOR
+══════════════════════════════════════════════════ */
+@keyframes indicator-in {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 1; }
+}
+
+.nav-indicator {
+  animation: indicator-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* ══════════════════════════════════════════════════
+   PROGRESS BAR FILL
+══════════════════════════════════════════════════ */
+@keyframes bar-fill {
+  from { width: 0; }
+}
+
+.bar-fill {
+  animation: bar-fill 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ══════════════════════════════════════════════════
+   UTILITY
+══════════════════════════════════════════════════ */
+.pb-safe {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
