@@ -26,6 +26,7 @@ export default function EditRegistroSheet({ registro, onClose, onSaved }: Props)
   const supabase = createClient()
 
   const [peso, setPeso]       = useState('')
+  const [fecha, setFecha]     = useState('')
   const [entreno, setEntreno] = useState(false)
   const [cardio, setCardio]   = useState(false)
   const [tags, setTags]       = useState<string[]>([])
@@ -40,6 +41,7 @@ export default function EditRegistroSheet({ registro, onClose, onSaved }: Props)
     if (registro) {
       queueMicrotask(() => {
         setPeso(registro.peso.toString())
+        setFecha(registro.fecha)
         setEntreno(registro.entreno)
         setCardio(registro.cardio)
         setTags(registro.tags ?? [])
@@ -66,7 +68,7 @@ export default function EditRegistroSheet({ registro, onClose, onSaved }: Props)
 
     const { error: dbError } = await supabase
       .from('registros_diarios')
-      .update({ peso: parseFloat(peso), entreno, cardio, tags })
+      .update({ peso: parseFloat(peso), fecha, entreno, cardio, tags })
       .eq('id', registro.id)
 
     if (dbError) {
@@ -139,7 +141,7 @@ export default function EditRegistroSheet({ registro, onClose, onSaved }: Props)
               Editar registro
             </p>
             <p className="text-sm font-semibold capitalize mt-0.5" style={{ color: 'var(--on-surface)' }}>
-              {formatFechaLarga(registro.fecha)}
+              {formatFechaLarga(fecha || registro.fecha)}
             </p>
           </div>
           <button
@@ -182,6 +184,27 @@ export default function EditRegistroSheet({ registro, onClose, onSaved }: Props)
                 kg
               </span>
             </div>
+          </div>
+
+          {/* Fecha */}
+          <div
+            className="rounded-xl px-4 py-3"
+            style={{ background: 'var(--surface-container-high)', border: '1px solid var(--outline-variant)' }}
+          >
+            <label htmlFor="edit-fecha"
+              className="text-[10px] font-bold uppercase tracking-widest block mb-1"
+              style={{ color: 'var(--on-surface-variant)' }}>
+              Fecha
+            </label>
+            <input
+              id="edit-fecha"
+              type="date"
+              value={fecha}
+              onChange={e => setFecha(e.target.value)}
+              className="bg-transparent outline-none text-base font-semibold w-full"
+              style={{ color: 'var(--on-surface)' }}
+              required
+            />
           </div>
 
           {/* Toggles */}

@@ -26,6 +26,7 @@ export default function ProgresoPage() {
     new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
   )
   const [filtroActivo, setFiltroActivo]   = useState<string>('Todos')
+  const [paginaActual, setPaginaActual]   = useState(1)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -65,6 +66,10 @@ export default function ProgresoPage() {
       void fetchData()
     })
   }, [fetchData])
+
+  useEffect(() => {
+    setPaginaActual(1)
+  }, [filtroActivo])
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -174,20 +179,63 @@ export default function ProgresoPage() {
               <p className="text-xs mt-1" style={{ color: 'var(--on-surface-variant)' }}>Agregá tu peso de hoy para empezar</p>
             </div>
           ) : (
-            registros.map((reg, idx) => {
-              const ascIdx  = registrosAsc.findIndex(r => r.id === reg.id)
-              const anterior = ascIdx > 0 ? registrosAsc[ascIdx - 1] : null
-              return (
-                <HistorialCard
-                  key={reg.id}
-                  registro={reg}
-                  anterior={anterior}
-                  pesoObjetivo={pesoObjetivo}
-                  onEdit={setEditTarget}
-                  index={idx}
-                />
-              )
-            })
+            <>
+              {(() => {
+                const itemsPorPagina = 5
+                const totalPaginas = Math.ceil(registros.length / itemsPorPagina)
+                const registrosPaginados = registros.slice((paginaActual - 1) * itemsPorPagina, paginaActual * itemsPorPagina)
+                return (
+                  <>
+                    {registrosPaginados.map((reg, idx) => {
+                      const ascIdx  = registrosAsc.findIndex(r => r.id === reg.id)
+                      const anterior = ascIdx > 0 ? registrosAsc[ascIdx - 1] : null
+                      return (
+                        <HistorialCard
+                          key={reg.id}
+                          registro={reg}
+                          anterior={anterior}
+                          pesoObjetivo={pesoObjetivo}
+                          onEdit={setEditTarget}
+                          index={idx}
+                        />
+                      )
+                    })}
+
+                    {totalPaginas > 1 && (
+                      <div className="flex items-center justify-between mt-4 px-1 pb-4">
+                        <button
+                          onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
+                          disabled={paginaActual === 1}
+                          className="px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+                          style={{
+                            background: 'var(--surface-container-high)',
+                            color: 'var(--on-surface)',
+                            border: '1px solid var(--outline-variant)'
+                          }}
+                        >
+                          Anterior
+                        </button>
+                        <span className="text-xs font-semibold" style={{ color: 'var(--on-surface-variant)' }}>
+                          Página {paginaActual} de {totalPaginas}
+                        </span>
+                        <button
+                          onClick={() => setPaginaActual(p => Math.min(totalPaginas, p + 1))}
+                          disabled={paginaActual === totalPaginas}
+                          className="px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 disabled:opacity-30 disabled:pointer-events-none"
+                          style={{
+                            background: 'var(--surface-container-high)',
+                            color: 'var(--on-surface)',
+                            border: '1px solid var(--outline-variant)'
+                          }}
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+            </>
           )}
         </div>
       </div>

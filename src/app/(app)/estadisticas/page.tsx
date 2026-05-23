@@ -12,7 +12,7 @@ import {
   Tooltip,
   ReferenceLine,
 } from 'recharts'
-import { TrendingDown, TrendingUp, Minus, Dumbbell, Heart, BarChart2 } from 'lucide-react'
+import { TrendingDown, TrendingUp, Minus, Dumbbell, Heart, BarChart2, Calendar, Scale } from 'lucide-react'
 
 type Range = '7' | '14' | '30' | 'all'
 
@@ -21,6 +21,7 @@ interface Registro {
   peso: number
   entreno: boolean
   cardio: boolean
+  tags?: string[] | null
 }
 
 interface Configuracion {
@@ -77,6 +78,15 @@ function StatChip({ label, value, sub, color }: {
   )
 }
 
+// ── Helper to calculate progress percentage towards target ────────────────
+function getProgressPercent(initial: number, current: number, target: number): number {
+  if (initial === target) return 100
+  const totalChangeNeeded = target - initial
+  const changeMade = current - initial
+  const percent = (changeMade / totalChangeNeeded) * 100
+  return Math.min(Math.max(percent, 0), 100)
+}
+
 export default function EstadisticasPage() {
   const supabase = createClient()
 
@@ -93,7 +103,7 @@ export default function EstadisticasPage() {
     const [{ data: regs }, { data: cfg }] = await Promise.all([
       supabase
         .from('registros_diarios')
-        .select('fecha, peso, entreno, cardio')
+        .select('fecha, peso, entreno, cardio, tags')
         .eq('user_id', user.id)
         .order('fecha', { ascending: true }),
       supabase
@@ -131,40 +141,68 @@ export default function EstadisticasPage() {
     cardio: r.cardio,
   }))
 
+  // Peso inicial y último para cálculos generales
+  const pesoInicial = configuracion?.peso_inicial ?? registros[0]?.peso ?? null
+  const ultimo = registros[registros.length - 1]?.peso ?? null
+  const pesoObjetivo = configuracion?.peso_objetivo ?? null
+  const variacionTotal = ultimo != null && pesoInicial != null ? ultimo - pesoInicial : null
+
   // ── Stats calculadas ────────────────────────────────────
   const pesos = filtered.map(r => r.peso)
-  const pesoMin  = pesos.length ? Math.min(...pesos) : null
-  const pesoMax  = pesos.length ? Math.max(...pesos) : null
+  const pesosConInicial = pesoInicial != null ? [...pesos, pesoInicial] : pesos
+  const pesoMin  = pesosConInicial.length ? Math.min(...pesosConInicial) : null
+  const pesoMax  = pesosConInicial.length ? Math.max(...pesosConInicial) : null
   const pesoMedio = pesos.length ? pesos.reduce((a, b) => a + b, 0) / pesos.length : null
-  const primero  = filtered[0]?.peso ?? null
-  const ultimo   = filtered[filtered.length - 1]?.peso ?? null
-  const variacion = primero != null && ultimo != null ? ultimo - primero : null
+
+  // Variación en el período filtrado
+  const primeroPeriodo = filtered[0]?.peso ?? null
+  const ultimoPeriodo = filtered[filtered.length - 1]?.peso ?? null
+  const baseInicialPeriodo = range === 'all' ? pesoInicial : primeroPeriodo
+  const variacion = ultimoPeriodo != null && baseInicialPeriodo != null ? ultimoPeriodo - baseInicialPeriodo : null
   const tendencia = variacion == null ? null : variacion < 0 ? 'baja' : variacion > 0 ? 'sube' : 'estable'
 
   let progresoMensaje = null
   let progresoColor: string | undefined = undefined
   if (variacion != null && configuracion?.peso_objetivo != null) {
-    const pInicial = configuracion.peso_inicial ?? primero ?? ultimo ?? 0
-    const quiereBajar = configuracion.peso_objetivo < pInicial
-    const quiereSubir = configuracion.peso_objetivo > pInicial
-    
-    if (quiereBajar) {
-      if (variacion <= -0.1) { progresoMensaje = '¡Venís re bien! Te acercás a tu objetivo. 👏'; progresoColor = 'var(--secondary)' }
-      else if (variacion >= 0.1) { progresoMensaje = 'Subiste un poco. ¡A no aflojar! 💪'; progresoColor = 'var(--tertiary)' }
-      else { progresoMensaje = 'Te estás manteniendo. ¡Seguí así! 👍'; progresoColor = 'var(--on-surface)' }
-    } else if (quiereSubir) {
-      if (variacion >= 0.1) { progresoMensaje = '¡Venís re bien! Ganando peso. 👏'; progresoColor = 'var(--secondary)' }
-      else if (variacion <= -0.1) { progresoMensaje = 'Bajaste un poco. ¡A comer más! 💪'; progresoColor = 'var(--tertiary)' }
-      else { progresoMensaje = 'Te estás manteniendo. ¡A meterle! 👍'; progresoColor = 'var(--on-surface)' }
-    } else {
-      progresoMensaje = 'Mantenimiento de peso. ¡Excelente! 🎯'
-      progresoColor = 'var(--secondary)'
+    const pInicial = baseInicialPeriodo
+    if (pInicial != null) {
+      const quiereBajar = configuracion.peso_objetivo < pInicial
+      const quiereSubir = configuracion.peso_objetivo > pInicial
+      
+      if (quiereBajar) {
+        if (variacion <= -0.1) { progresoMensaje = '¡Venís re bien! Te acercás a tu objetivo. 👏'; progresoColor = 'var(--secondary)' }
+        else if (variacion >= 0.1) { progresoMensaje = 'Subiste un poco. ¡A no aflojar! 💪'; progresoColor = 'var(--tertiary)' }
+        else { progresoMensaje = 'Te estás manteniendo. ¡Seguí así! 👍'; progresoColor = 'var(--on-surface)' }
+      } else if (quiereSubir) {
+        if (variacion >= 0.1) { progresoMensaje = '¡Venís re bien! Ganando peso. 👏'; progresoColor = 'var(--secondary)' }
+        else if (variacion <= -0.1) { progresoMensaje = 'Bajaste un poco. ¡A comer más! 💪'; progresoColor = 'var(--tertiary)' }
+        else { progresoMensaje = 'Te estás manteniendo. ¡A meterle! 👍'; progresoColor = 'var(--on-surface)' }
+      } else {
+        progresoMensaje = 'Mantenimiento de peso. ¡Excelente! 🎯'
+        progresoColor = 'var(--secondary)'
+      }
     }
   }
 
   const diasConEntreno = filtered.filter(r => r.entreno).length
   const diasConCardio  = filtered.filter(r => r.cardio).length
   const totalDias      = filtered.length
+
+  const oldestRecordInDb = registros[0]?.fecha // registros is sorted ascending
+  const oldestDate = oldestRecordInDb ? new Date(oldestRecordInDb + 'T00:00:00') : new Date()
+  oldestDate.setHours(0,0,0,0)
+
+  const today = new Date()
+  today.setHours(0,0,0,0)
+
+  const diffMs = today.getTime() - oldestDate.getTime()
+  const maxElapsedDays = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
+
+  let diasTranscurridos = maxElapsedDays
+  if (range !== 'all') {
+    diasTranscurridos = Math.min(parseInt(range), maxElapsedDays)
+  }
+  diasTranscurridos = Math.max(diasTranscurridos, totalDias) // safeguard
 
   // IMC
   const pesoActual = ultimo
@@ -290,10 +328,10 @@ export default function EstadisticasPage() {
                   color: tendencia === 'baja' ? 'var(--secondary)' : tendencia === 'sube' ? 'var(--tertiary)' : 'var(--on-surface)'
                 }}>
                   {variacion === 0
-                    ? 'Peso estable en este período'
+                    ? 'Peso estable'
                     : variacion < 0
-                    ? `Bajaste ${Math.abs(variacion).toFixed(1)} kg en este período`
-                    : `Subiste ${variacion.toFixed(1)} kg en este período`
+                    ? `Bajaste ${Math.abs(variacion).toFixed(1)} kg ${range === 'all' ? 'en total' : 'en este período'}`
+                    : `Subiste ${variacion.toFixed(1)} kg ${range === 'all' ? 'en total' : 'en este período'}`
                   }
                 </p>
                 {progresoMensaje && (
@@ -423,7 +461,7 @@ export default function EstadisticasPage() {
                 ].map(row => (
                   <div key={row.label} className="flex items-center gap-1.5 justify-end">
                     <span className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>
-                      {row.label.split(' ').slice(1).join(' ')}
+                      {row.label}
                     </span>
                     <div className="w-2 h-2 rounded-full" style={{ background: row.color }} />
                   </div>
@@ -432,56 +470,123 @@ export default function EstadisticasPage() {
             </div>
           )}
 
-          {/* Actividad */}
-          <div
-            className="rounded-2xl p-4"
-            style={{ background: 'var(--surface-container)', border: '1px solid var(--outline-variant)' }}
-          >
-            <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--on-surface-variant)' }}>
-              Actividad física
-            </p>
-            <div className="flex flex-col gap-3">
-              {/* Entreno bar */}
+          {/* Progreso hacia Objetivos */}
+          {pesoInicial != null && pesoObjetivo != null && ultimo != null && (
+            <div
+              className="rounded-2xl p-4 flex flex-col gap-4"
+              style={{ background: 'var(--surface-container)', border: '1px solid var(--outline-variant)' }}
+            >
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Dumbbell size={13} style={{ color: 'var(--primary)' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--on-surface)' }}>Entreno</span>
-                  </div>
-                  <span className="text-xs font-bold" style={{ color: 'var(--primary)' }}>
-                    {diasConEntreno}/{totalDias} días
+                <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>
+                  Progreso hacia Objetivos
+                </p>
+                <p className="text-[11px]" style={{ color: 'var(--on-surface-variant)' }}>
+                  Progreso hacia tus metas configuradas
+                </p>
+              </div>
+
+              {/* Progreso de Peso */}
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1.5">
+                  <span className="font-semibold text-xs" style={{ color: 'var(--on-surface)' }}>Peso</span>
+                  <span className="font-bold text-xs" style={{ color: 'var(--primary)' }}>
+                    {pesoInicial.toFixed(1)} kg → {ultimo.toFixed(1)} kg (Meta: {pesoObjetivo.toFixed(1)} kg)
                   </span>
                 </div>
                 <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-container-high)' }}>
                   <div
                     className="h-full rounded-full transition-all duration-700"
                     style={{
-                      width: totalDias ? `${(diasConEntreno / totalDias) * 100}%` : '0%',
+                      width: `${getProgressPercent(pesoInicial, ultimo, pesoObjetivo)}%`,
                       background: 'var(--primary)',
                     }}
                   />
                 </div>
+                <div className="flex justify-between text-[9px] mt-1" style={{ color: 'var(--on-surface-variant)' }}>
+                  <span>Inicial: {pesoInicial.toFixed(1)} kg</span>
+                  <span className="font-bold">{getProgressPercent(pesoInicial, ultimo, pesoObjetivo).toFixed(0)}% completado</span>
+                  <span>Meta: {pesoObjetivo.toFixed(1)} kg</span>
+                </div>
               </div>
-              {/* Cardio bar */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <Heart size={13} style={{ color: 'var(--secondary)' }} />
-                    <span className="text-xs font-semibold" style={{ color: 'var(--on-surface)' }}>Cardio</span>
-                  </div>
-                  <span className="text-xs font-bold" style={{ color: 'var(--secondary)' }}>
-                    {diasConCardio}/{totalDias} días
-                  </span>
+
+              {/* Progreso de IMC */}
+              {altura != null && (
+                <div>
+                  {(() => {
+                    const imcInicial = pesoInicial / ((altura / 100) ** 2)
+                    const imcActual = ultimo / ((altura / 100) ** 2)
+                    const imcObjetivo = pesoObjetivo / ((altura / 100) ** 2)
+                    const imcPercent = getProgressPercent(imcInicial, imcActual, imcObjetivo)
+                    return (
+                      <>
+                        <div className="flex justify-between items-center text-xs mb-1.5">
+                          <span className="font-semibold text-xs" style={{ color: 'var(--on-surface)' }}>IMC</span>
+                          <span className="font-bold text-xs" style={{ color: 'var(--secondary)' }}>
+                            {imcInicial.toFixed(1)} → {imcActual.toFixed(1)} (Meta: {imcObjetivo.toFixed(1)})
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-container-high)' }}>
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{
+                              width: `${imcPercent}%`,
+                              background: 'var(--secondary)',
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[9px] mt-1" style={{ color: 'var(--on-surface-variant)' }}>
+                          <span>Inicial: {imcInicial.toFixed(1)}</span>
+                          <span className="font-bold">{imcPercent.toFixed(0)}% completado</span>
+                          <span>Meta: {imcObjetivo.toFixed(1)}</span>
+                        </div>
+                      </>
+                    )
+                  })()}
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-container-high)' }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: totalDias ? `${(diasConCardio / totalDias) * 100}%` : '0%',
-                      background: 'var(--secondary)',
-                    }}
-                  />
+              )}
+            </div>
+          )}
+
+          {/* Actividad y Hábitos */}
+          <div
+            className="rounded-2xl p-4 flex flex-col gap-4"
+            style={{ background: 'var(--surface-container)', border: '1px solid var(--outline-variant)' }}
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--on-surface-variant)' }}>
+                Actividad física
+              </p>
+              <p className="text-[11px]" style={{ color: 'var(--on-surface-variant)' }}>
+                Resumen del período seleccionado
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {/* Registro de Peso (Días transcurridos vs registrados) */}
+              <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--outline-variant)' }}>
+                <div className="flex items-center gap-1.5">
+                  <Calendar size={13} style={{ color: 'var(--primary)' }} />
+                  <span className="text-xs font-semibold" style={{ color: 'var(--on-surface)' }}>Registros de peso</span>
                 </div>
+                <span className="text-xs font-bold" style={{ color: 'var(--on-surface-variant)' }}>
+                  {totalDias} de {diasTranscurridos} {diasTranscurridos === 1 ? 'día' : 'días'}
+                </span>
+              </div>
+
+              {/* Listado de Hábitos y Etiquetas */}
+              <div className="flex flex-col gap-2.5">
+                {['🦵 Piernas', '💪 Empuje', '🏋️ Tirón', '🏃 Caminar/Trotar', '🚲 Bici'].map(tag => {
+                  const count = filtered.filter(r => r.tags?.includes(tag)).length
+                  const isStrength = tag.includes('Piernas') || tag.includes('Empuje') || tag.includes('Tirón')
+                  return (
+                    <div key={tag} className="flex items-center justify-between py-0.5">
+                      <span className="text-xs font-medium" style={{ color: 'var(--on-surface)' }}>{tag}</span>
+                      <span className="text-xs font-bold" style={{ color: isStrength ? 'var(--primary)' : 'var(--secondary)' }}>
+                        {count} {count === 1 ? 'día' : 'días'}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </div>
@@ -495,8 +600,8 @@ export default function EstadisticasPage() {
             />
             <StatChip
               label="Variación total"
-              value={variacion != null ? `${variacion > 0 ? '+' : ''}${variacion.toFixed(1)} kg` : '—'}
-              color={variacion == null ? undefined : variacion < 0 ? 'var(--secondary)' : variacion > 0 ? 'var(--tertiary)' : 'var(--on-surface-variant)'}
+              value={variacionTotal != null ? `${variacionTotal > 0 ? '+' : ''}${variacionTotal.toFixed(1)} kg` : '—'}
+              color={variacionTotal == null ? undefined : variacionTotal < 0 ? 'var(--secondary)' : variacionTotal > 0 ? 'var(--tertiary)' : 'var(--on-surface-variant)'}
             />
             <StatChip
               label="Peso mínimo"
