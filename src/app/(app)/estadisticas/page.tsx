@@ -297,6 +297,34 @@ export default function EstadisticasPage() {
         ))}
       </div>
 
+      {/* Promedio del período seleccionado */}
+      {filtered.length > 0 && pesoMedio != null && (
+        <div
+          className="flex justify-between items-center rounded-2xl p-4 card-enter animate-fade-in"
+          style={{
+            background: 'var(--surface-container)',
+            border: '1px solid var(--outline-variant)',
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <Scale size={18} style={{ color: 'var(--primary)' }} />
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--on-surface-variant)' }}>
+                Promedio del período
+              </span>
+              <span className="text-[10px]" style={{ color: 'var(--on-surface-variant)' }}>
+                {range === 'all'
+                  ? 'Todo el historial'
+                  : `Últimos ${range} días`}
+              </span>
+            </div>
+          </div>
+          <span className="text-xl font-bold" style={{ color: 'var(--primary)' }}>
+            {pesoMedio.toFixed(1)} kg
+          </span>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div
           className="text-center py-12 rounded-2xl"
@@ -597,6 +625,16 @@ export default function EstadisticasPage() {
               label="Días registrados"
               value={String(totalDias)}
               sub="en el período seleccionado"
+            />
+            <StatChip
+              label="Peso promedio"
+              value={pesoMedio != null ? `${pesoMedio.toFixed(1)} kg` : '—'}
+              color="var(--primary)"
+            />
+            <StatChip
+              label="Variación período"
+              value={variacion != null ? `${variacion > 0 ? '+' : ''}${variacion.toFixed(1)} kg` : '—'}
+              color={variacion == null ? undefined : variacion < 0 ? 'var(--secondary)' : variacion > 0 ? 'var(--tertiary)' : 'var(--on-surface-variant)'}
             />
             <StatChip
               label="Variación total"
